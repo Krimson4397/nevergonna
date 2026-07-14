@@ -27,4 +27,5 @@ $date     = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 $table = ($results | Format-Table -AutoSize | Out-String).Trim()
 
 $msg = @"
-**
+**New capture** — $date
+**User:** $user
