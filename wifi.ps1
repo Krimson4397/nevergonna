@@ -33,7 +33,13 @@ try {
     $Response = Invoke-RestMethod -Uri $WebhookUrl -Method Post -Body $Payload -ContentType "application/json"
 }
 catch {
-    # Silently handle errors so the final output is deterministic
+    Write-Host "Exception:"
+    Write-Host $_.Exception.Message
+
+    if ($_.ErrorDetails.Message) {
+        Write-Host "Response:"
+        Write-Host $_.ErrorDetails.Message
+    }
 }
 
 Write-Host "done."
